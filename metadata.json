@@ -1,0 +1,6 @@
+{
+  "name": "WebQuest HTML Learning & Quiz",
+  "description": "เว็บแอพพลิเคชั่นทบทวนและตอบคำถามวิชาการสร้างเว็บไซต์ ปวช.1 สไตล์ Gamification เชื่อมต่อ Google Apps Script, Google Sheets และ LINE LIFF",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
