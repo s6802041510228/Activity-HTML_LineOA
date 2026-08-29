@@ -31,6 +31,9 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        if (parsed.score === 180 && parsed.level === 2) {
+          return INITIAL_USER;
+        }
         if (parsed.rank && parsed.rank > 1) {
           parsed.rank = 1;
         }
@@ -46,7 +49,11 @@ export default function App() {
     const saved = localStorage.getItem('webquest_daily_quests');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed.some((q: DailyQuest) => q.id === 'quest_checkin' && q.claimed)) {
+          return DAILY_QUESTS;
+        }
+        return parsed;
       } catch (e) {
         // fallback
       }
@@ -157,7 +164,7 @@ export default function App() {
         return LEVEL_THRESHOLDS[i].level;
       }
     }
-    return 1;
+    return 0;
   };
 
   // 2. Gamification Handlers
