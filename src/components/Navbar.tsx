@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Shield, Database, Sparkles, Flame, UserCheck } from 'lucide-react';
+import { Volume2, VolumeX, Shield, Database, Sparkles, Flame, UserCheck, Cloud, RefreshCw, Check, CheckCircle2 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { soundManager } from '../utils/audio';
 
@@ -11,6 +11,9 @@ interface NavbarProps {
   onOpenGasModal: () => void;
   onOpenProfileModal: () => void;
   isGasConnected: boolean;
+  syncStatus: 'idle' | 'saving' | 'saved' | 'error';
+  lastSavedTime: string;
+  onManualSave: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -21,6 +24,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenGasModal,
   onOpenProfileModal,
   isGasConnected,
+  syncStatus,
+  lastSavedTime,
+  onManualSave,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#1a1a3c]/80 border-b border-indigo-500/30">
@@ -71,6 +77,42 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>{user.streakDays} วัน</span>
               </div>
             )}
+
+            {/* Real-time Auto-Save Status Badge */}
+            <button
+              onClick={onManualSave}
+              disabled={syncStatus === 'saving'}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border group active:scale-95 cursor-pointer ${
+                syncStatus === 'saving'
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse'
+                  : syncStatus === 'error'
+                  ? 'bg-red-500/20 text-red-300 border-red-500/40'
+                  : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-500/50'
+              }`}
+              title={`ระบบบันทึกอัตโนมัติแบบเรียลไทม์ (Auto-Save Realtime)\nบันทึกล่าสุด: ${lastSavedTime || 'เริ่มต้นระบบ'}\nคลิกเพื่อบันทึกและซิงค์ทันที`}
+            >
+              {syncStatus === 'saving' ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+                  <span className="hidden md:inline">กำลัง Auto Save...</span>
+                </>
+              ) : syncStatus === 'error' ? (
+                <>
+                  <Cloud className="w-3.5 h-3.5 text-red-400" />
+                  <span className="hidden md:inline">บันทึกลงเครื่องแล้ว</span>
+                </>
+              ) : (
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <Cloud className="w-3.5 h-3.5 text-emerald-400 hidden xs:inline" />
+                  <span className="hidden lg:inline text-[11px]">Auto Saved</span>
+                  <span className="text-[10px] opacity-80 font-mono hidden sm:inline">{lastSavedTime}</span>
+                </>
+              )}
+            </button>
 
             {/* Google Sheets / Apps Script Status Button */}
             <button

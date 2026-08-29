@@ -23,13 +23,52 @@ export const LessonsAndQuizTab: React.FC<LessonsAndQuizTabProps> = ({
   const [selectedTopicId, setSelectedTopicId] = useState<QuizTopicId>('structure');
   const [viewMode, setViewMode] = useState<'study' | 'quiz' | 'result'>('study');
   
-  // Quiz State
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  // Quiz State with Real-time Auto-save Draft Recovery
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('webquest_quiz_draft_index');
+      return saved ? Number(saved) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>(() => {
+    try {
+      const saved = localStorage.getItem('webquest_quiz_draft_answers');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
   const [showInstantExplanation, setShowInstantExplanation] = useState<boolean>(true);
-  const [quizTimer, setQuizTimer] = useState<number>(0);
+  const [quizTimer, setQuizTimer] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('webquest_quiz_draft_timer');
+      return saved ? Number(saved) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
   const [quizScore, setQuizScore] = useState<{ score: number; total: number; expGained: number }>({ score: 0, total: 10, expGained: 0 });
+
+  // Auto-save draft quiz state in real-time
+  useEffect(() => {
+    if (viewMode === 'quiz') {
+      localStorage.setItem('webquest_quiz_draft_answers', JSON.stringify(selectedAnswers));
+      localStorage.setItem('webquest_quiz_draft_index', currentQuestionIndex.toString());
+      localStorage.setItem('webquest_quiz_draft_timer', quizTimer.toString());
+    }
+  }, [viewMode, selectedAnswers, currentQuestionIndex, quizTimer]);
+
+  const clearQuizDraft = () => {
+    localStorage.removeItem('webquest_quiz_draft_answers');
+    localStorage.removeItem('webquest_quiz_draft_index');
+    localStorage.removeItem('webquest_quiz_draft_timer');
+  };
 
   const activeTopic = LESSON_TOPICS.find((t) => t.id === selectedTopicId) || LESSON_TOPICS[0];
   const topicQuestions = QUESTIONS_DATA.filter((q) => q.topicId === selectedTopicId);
@@ -119,6 +158,7 @@ export const LessonsAndQuizTab: React.FC<LessonsAndQuizTabProps> = ({
     }
 
     onFinishQuiz(selectedTopicId, calculatedScore, topicQuestions.length);
+    clearQuizDraft();
     setViewMode('result');
   };
 

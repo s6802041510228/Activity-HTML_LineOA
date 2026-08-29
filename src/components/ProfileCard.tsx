@@ -8,6 +8,8 @@ interface ProfileCardProps {
   totalLessons: number;
   totalQuests: number;
   totalBadges: number;
+  syncStatus?: 'idle' | 'saving' | 'saved' | 'error';
+  lastSavedTime?: string;
   onEditProfile: () => void;
 }
 
@@ -16,6 +18,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   totalLessons,
   totalQuests,
   totalBadges,
+  syncStatus = 'saved',
+  lastSavedTime,
   onEditProfile,
 }) => {
   const currentLevelInfo: LevelThreshold = LEVEL_THRESHOLDS.find((l) => l.level === user.level) || LEVEL_THRESHOLDS[0];
@@ -123,10 +127,16 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       {/* Progress Dashboard Sub-section */}
       <div className="relative z-10 mt-6 space-y-4">
         
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-indigo-400 font-bold">
-            Progress Dashboard
-          </h2>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center space-x-2.5">
+            <h2 className="text-xs uppercase tracking-[0.2em] text-indigo-400 font-bold">
+              Progress Dashboard
+            </h2>
+            <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] text-emerald-400 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Auto-Saved {lastSavedTime}</span>
+            </div>
+          </div>
           <div className="text-xs font-mono">
             <span className="text-gray-400">Current XP: </span>
             <span className="text-purple-400 font-bold">{progressPercent}%</span>

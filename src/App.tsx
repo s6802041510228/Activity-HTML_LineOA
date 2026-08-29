@@ -88,9 +88,23 @@ export default function App() {
   const [isGasModalOpen, setIsGasModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
 
-  // Sync to local storage
+  // Real-time Auto-Save State
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('saved');
+  const [lastSavedTime, setLastSavedTime] = useState<string>(() => {
+    const d = new Date();
+    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  });
+
+  const triggerSaveTimestamp = () => {
+    const d = new Date();
+    setLastSavedTime(d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    setSyncStatus('saved');
+  };
+
+  // 1. Instant Real-time Local Storage Auto-Save
   useEffect(() => {
     localStorage.setItem('webquest_user_profile', JSON.stringify(user));
+    triggerSaveTimestamp();
   }, [user]);
 
   useEffect(() => {
@@ -108,6 +122,92 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('webquest_is_logged_in', isLoggedIn ? 'true' : 'false');
   }, [isLoggedIn]);
+
+  // 2. Debounced Cloud Real-time Auto-Save to Google Apps Script
+  useEffect(() => {
+    if (!gasUrl || !gasUrl.startsWith('https://script.google.com/')) return;
+    
+    setSyncStatus('saving');
+    const timer = setTimeout(async () => {
+      try {
+        const res = await sendToGasBackend(gasUrl, 'syncUser', user);
+        if (res.success) {
+          triggerSaveTimestamp();
+        } else {
+          setSyncStatus('saved'); // Local is saved
+        }
+      } catch (err) {
+        setSyncStatus('saved'); // Fallback to local save
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [user, gasUrl]);
+
+  // 3. Tab Visibility & BeforeUnload Auto-Save Handlers
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      localStorage.setItem('webquest_user_profile', JSON.stringify(user));
+      localStorage.setItem('webquest_daily_quests', JSON.stringify(quests));
+      localStorage.setItem('webquest_is_logged_in', isLoggedIn ? 'true' : 'false');
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        localStorage.setItem('webquest_user_profile', JSON.stringify(user));
+        if (gasUrl && gasUrl.startsWith('https://script.google.com/')) {
+          sendToGasBackend(gasUrl, 'syncUser', user);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, quests, isLoggedIn, gasUrl]);
+
+  // 4. Periodic Background Auto-Sync (Every 45 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (gasUrl && gasUrl.startsWith('https://script.google.com/')) {
+        sendToGasBackend(gasUrl, 'syncUser', user).then((res) => {
+          if (res.success) triggerSaveTimestamp();
+        });
+      }
+    }, 45000);
+
+    return () => clearInterval(interval);
+  }, [user, gasUrl]);
+
+  // Manual Force Save / Sync Handler
+  const handleManualSave = async () => {
+    soundManager.playClick();
+    setSyncStatus('saving');
+    
+    // Save to LocalStorage immediately
+    localStorage.setItem('webquest_user_profile', JSON.stringify(user));
+    localStorage.setItem('webquest_daily_quests', JSON.stringify(quests));
+    localStorage.setItem('webquest_leaderboard', JSON.stringify(leaderboard));
+    localStorage.setItem('webquest_is_logged_in', isLoggedIn ? 'true' : 'false');
+
+    if (gasUrl && gasUrl.startsWith('https://script.google.com/')) {
+      try {
+        const res = await sendToGasBackend(gasUrl, 'syncUser', user);
+        await handleRefreshLeaderboard();
+        triggerSaveTimestamp();
+      } catch (err) {
+        triggerSaveTimestamp();
+      }
+    } else {
+      setTimeout(() => {
+        triggerSaveTimestamp();
+      }, 400);
+    }
+  };
 
   const handleLogin = () => {
     setIsLoggedIn(true);
@@ -373,6 +473,9 @@ export default function App() {
         onOpenGasModal={() => setIsGasModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         isGasConnected={Boolean(gasUrl && gasUrl.startsWith('https://script.google.com/'))}
+        syncStatus={syncStatus}
+        lastSavedTime={lastSavedTime}
+        onManualSave={handleManualSave}
       />
 
       {/* 2. Main Content Container */}
@@ -385,6 +488,8 @@ export default function App() {
             totalLessons={2}
             totalQuests={quests.length}
             totalBadges={BADGES_DATA.length}
+            syncStatus={syncStatus}
+            lastSavedTime={lastSavedTime}
             onEditProfile={() => setIsProfileModalOpen(true)}
           />
         ) : (

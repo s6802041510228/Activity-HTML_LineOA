@@ -364,12 +364,67 @@ function updateUserScoreAndStreak(userId, addExp, streak, dateStr) {
 }
 
 function calculateLevel(exp) {
-  if (exp >= 1300) return 6;
-  if (exp >= 850) return 5;
-  if (exp >= 500) return 4;
-  if (exp >= 250) return 3;
-  if (exp >= 100) return 2;
-  return 1;
+  if (exp >= 2000) return 6;
+  if (exp >= 1300) return 5;
+  if (exp >= 850) return 4;
+  if (exp >= 500) return 3;
+  if (exp >= 250) return 2;
+  if (exp >= 100) return 1;
+  return 0;
+}
+
+/**
+ * ซิงค์ข้อมูลโปรไฟล์และคะแนนสะสมแบบเรียลไทม์ (Auto Save & Upsert)
+ */
+function syncUserProfile(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const userSheet = ss.getSheetByName(TABS.USERS);
+  const rows = userSheet.getDataRange().getValues();
+  
+  let foundRow = -1;
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] == data.userId || (data.studentId && rows[i][1] == data.studentId)) {
+      foundRow = i + 1;
+      break;
+    }
+  }
+
+  const now = new Date();
+  const badgesStr = JSON.stringify(data.badges || []);
+
+  if (foundRow > 0) {
+    // อัปเดตแถวเดิม
+    userSheet.getRange(foundRow, 2).setValue(data.studentId || "");
+    userSheet.getRange(foundRow, 3).setValue(data.displayName || "");
+    userSheet.getRange(foundRow, 4).setValue(data.classroom || "");
+    if (data.pictureUrl) userSheet.getRange(foundRow, 5).setValue(data.pictureUrl);
+    userSheet.getRange(foundRow, 6).setValue(Number(data.score) || 0);
+    userSheet.getRange(foundRow, 7).setValue(Number(data.level) || 0);
+    userSheet.getRange(foundRow, 8).setValue(Number(data.streakDays) || 0);
+    if (data.lastCheckInDate) userSheet.getRange(foundRow, 9).setValue(data.lastCheckInDate);
+    userSheet.getRange(foundRow, 10).setValue(badgesStr);
+  } else {
+    // เพิ่มแถวใหม่ (ลงทะเบียนใหม่)
+    userSheet.appendRow([
+      data.userId,
+      data.studentId || "",
+      data.displayName || "",
+      data.classroom || "",
+      data.pictureUrl || "",
+      Number(data.score) || 0,
+      Number(data.level) || 0,
+      Number(data.streakDays) || 0,
+      data.lastCheckInDate || "",
+      badgesStr,
+      now
+    ]);
+  }
+
+  return {
+    success: true,
+    message: "Auto-Save ซิงค์ข้อมูลลง Google Sheets เรียบร้อยแล้ว (Real-time)",
+    updatedAt: Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss")
+  };
 }
 `;
 
