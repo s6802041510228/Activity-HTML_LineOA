@@ -85,8 +85,17 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           </div>
         </div>
 
-        {/* Level & Rank Highlight Badge */}
-        <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+        {/* Level & Rank Highlight Badge + Edit Profile Button */}
+        <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end flex-wrap gap-2">
+          <button
+            onClick={onEditProfile}
+            className="px-3.5 py-2 rounded-2xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-200 hover:text-white text-xs font-bold transition flex items-center space-x-1.5 active:scale-95 shadow-sm cursor-pointer"
+            title="แก้ไขข้อมูลส่วนตัว / จัดการบัญชี LINE"
+          >
+            <Edit3 className="w-3.5 h-3.5 text-purple-400" />
+            <span>แก้ไขข้อมูลส่วนตัว</span>
+          </button>
+
           <div className="px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-right">
             <div className="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-bold">
               Level {user.level}

@@ -15,9 +15,9 @@ export const GAS_CODE_GS = `/**
 
 // 1. ตั้งค่าพื้นฐานระบบ (CONFIG)
 const CONFIG = {
-  SPREADSHEET_ID: SpreadsheetApp.getActiveSpreadsheet().getId(),
-  LINE_CHANNEL_ACCESS_TOKEN: "ใส่_LINE_CHANNEL_ACCESS_TOKEN_ที่นี่", // จาก LINE Developers Console
-  LIFF_ID: "ใส่_LIFF_ID_ที่นี่", // LIFF ID
+  SPREADSHEET_ID: "126WPtbRHXFcl1b5hSqrtWU8UXTJsV-roDdgRE1lnueU",
+  LINE_CHANNEL_ACCESS_TOKEN: "v7/PyBOvoxVV7u4Mc5gmsLvR9iECKenO0ZgwRyPt/j0e0kT4JuyJtYRnjyhi+C4ahmK/SbSjRJdgTeiqAAnoZftItoYhvG2Qqktv5VT/VE9+0Gqu7jBlKW4Nwn1e2qvE3ekbQoTQB2mbWyv97ExmMwdB04t89/1O/w1cDnyilFU=",
+  LIFF_ID: "2011321555-jl54Ygfm",
   ADMIN_EMAIL: Session.getActiveUser().getEmail()
 };
 

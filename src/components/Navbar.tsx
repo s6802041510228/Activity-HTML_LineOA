@@ -5,6 +5,7 @@ import { soundManager } from '../utils/audio';
 
 interface NavbarProps {
   user: UserProfile;
+  isLoggedIn: boolean;
   audioEnabled: boolean;
   onToggleAudio: () => void;
   onOpenGasModal: () => void;
@@ -14,6 +15,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   user,
+  isLoggedIn,
   audioEnabled,
   onToggleAudio,
   onOpenGasModal,
@@ -29,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center space-x-3.5">
             <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl border-2 border-purple-500 bg-gradient-to-tr from-indigo-600 to-purple-600 shadow-lg shadow-purple-500/25">
               <span className="text-lg font-black text-white tracking-wider">&lt;/&gt;</span>
-              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-[#0a0a23]" title="LINE LIFF Active" />
+              <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[#0a0a23] ${isLoggedIn ? 'bg-emerald-500' : 'bg-slate-500'}`} title={isLoggedIn ? 'LINE Active' : 'Offline'} />
             </div>
             <div>
               <div className="flex items-center space-x-2">
@@ -41,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-indigo-300 font-medium hidden xs:block">
-                Level {user.level} • Junior Web Developer
+                {isLoggedIn ? `Level ${user.level} • Junior Web Developer` : 'ระบบการเรียนรู้และทำแบบทดสอบ HTML5'}
               </p>
             </div>
           </div>
@@ -50,21 +52,25 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center space-x-2 sm:space-x-4">
             
             {/* Total Points Highlight in Immersive UI Header */}
-            <div className="text-right hidden sm:block">
-              <p className="text-[10px] uppercase tracking-widest text-indigo-400 font-bold">Total Points</p>
-              <p className="text-lg sm:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-mono">
-                {user.score} XP
-              </p>
-            </div>
+            {isLoggedIn && (
+              <div className="text-right hidden sm:block">
+                <p className="text-[10px] uppercase tracking-widest text-indigo-400 font-bold">Total Points</p>
+                <p className="text-lg sm:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-mono">
+                  {user.score} XP
+                </p>
+              </div>
+            )}
 
             {/* Streak Counter */}
-            <div 
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs sm:text-sm font-bold shadow-sm"
-              title={`สตรีคเช็คอินต่อเนื่อง ${user.streakDays} วัน`}
-            >
-              <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
-              <span>{user.streakDays} วัน</span>
-            </div>
+            {isLoggedIn && (
+              <div 
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs sm:text-sm font-bold shadow-sm"
+                title={`สตรีคเช็คอินต่อเนื่อง ${user.streakDays} วัน`}
+              >
+                <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
+                <span>{user.streakDays} วัน</span>
+              </div>
+            )}
 
             {/* Google Sheets / Apps Script Status Button */}
             <button
@@ -93,20 +99,35 @@ export const Navbar: React.FC<NavbarProps> = ({
               {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
-            {/* LINE Login / Profile Trigger Pill Button */}
-            <button
-              onClick={onOpenProfileModal}
-              className="flex items-center space-x-2 pl-1.5 pr-3 py-1.5 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-purple-500/25 transition-all duration-200 active:scale-95"
-            >
-              <img
-                src={user.pictureUrl}
-                alt={user.displayName}
-                className="w-6 h-6 rounded-full object-cover ring-2 ring-white/50"
-              />
-              <span className="max-w-[90px] sm:max-w-[120px] truncate">
-                {user.displayName.split(' ')[0]}
-              </span>
-            </button>
+            {/* LINE Login / Profile Trigger Button */}
+            {isLoggedIn ? (
+              <button
+                onClick={onOpenProfileModal}
+                className="flex items-center space-x-2 pl-1.5 pr-3 py-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#06C755]/25 transition-all duration-200 active:scale-95 cursor-pointer"
+                title="แก้ไขข้อมูลส่วนตัว / โปรไฟล์"
+              >
+                <img
+                  src={user.pictureUrl}
+                  alt={user.displayName}
+                  className="w-6 h-6 rounded-full object-cover ring-2 ring-white/70"
+                />
+                <div className="flex items-center space-x-1">
+                  <span className="hidden xs:inline text-[10px] bg-black/20 px-1.5 py-0.5 rounded-full font-black">LINE</span>
+                  <span className="max-w-[80px] sm:max-w-[110px] truncate">
+                    {user.displayName.split(' ')[0]}
+                  </span>
+                </div>
+              </button>
+            ) : (
+              <button
+                onClick={onOpenProfileModal}
+                className="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-xs sm:text-sm shadow-lg shadow-[#06C755]/30 transition-all duration-200 active:scale-95 cursor-pointer"
+                title="เข้าสู่ระบบด้วย LINE"
+              >
+                <span className="font-black text-xs bg-black/20 px-1.5 py-0.5 rounded-md">LINE</span>
+                <span>เข้าสู่ระบบ</span>
+              </button>
+            )}
 
           </div>
         </div>

@@ -11,15 +11,21 @@ import { sendToGasBackend, fetchLeaderboardFromGas } from './utils/gasService';
 
 import { Navbar } from './components/Navbar';
 import { ProfileCard } from './components/ProfileCard';
+import { GuestHeroCard } from './components/GuestHeroCard';
 import { CheckInTab } from './components/CheckInTab';
 import { LessonsAndQuizTab } from './components/LessonsAndQuizTab';
 import { BadgesTab } from './components/BadgesTab';
 import { LeaderboardTab } from './components/LeaderboardTab';
 import { GasDocsModal } from './components/GasDocsModal';
-import { EditProfileModal } from './components/EditProfileModal';
+import { LineLoginModal } from './components/LineLoginModal';
+import { liffManager } from './utils/liffService';
 
 export default function App() {
   // 1. User & App State
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('webquest_is_logged_in') === 'true';
+  });
+
   const [user, setUser] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('webquest_user_profile');
     if (saved) {
@@ -91,6 +97,44 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('webquest_gas_url', gasUrl);
   }, [gasUrl]);
+
+  useEffect(() => {
+    localStorage.setItem('webquest_is_logged_in', isLoggedIn ? 'true' : 'false');
+  }, [isLoggedIn]);
+
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    localStorage.setItem('webquest_is_logged_in', 'true');
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem('webquest_is_logged_in');
+    liffManager.logout();
+  };
+
+  // Attempt automatic LIFF initialization if in LINE app or saved LIFF ID exists
+  useEffect(() => {
+    const autoInitLiff = async () => {
+      const savedLiffId = liffManager.getSavedLiffId();
+      if (!savedLiffId) return;
+      try {
+        const res = await liffManager.initLiff(savedLiffId);
+        if (res.success && res.profile) {
+          handleSaveProfile({
+            userId: res.profile.userId,
+            displayName: res.profile.displayName,
+            pictureUrl: res.profile.pictureUrl || user.pictureUrl,
+            statusMessage: res.profile.statusMessage || user.statusMessage,
+          });
+          handleLogin();
+        }
+      } catch (e) {
+        // Silently skip if not logged in yet
+      }
+    };
+    autoInitLiff();
+  }, []);
 
   // Handler to fetch real leaderboard from Google Sheets
   const handleRefreshLeaderboard = async () => {
@@ -316,6 +360,7 @@ export default function App() {
       {/* 1. Header Navigation Bar */}
       <Navbar
         user={user}
+        isLoggedIn={isLoggedIn}
         audioEnabled={audioEnabled}
         onToggleAudio={handleToggleAudio}
         onOpenGasModal={() => setIsGasModalOpen(true)}
@@ -326,14 +371,20 @@ export default function App() {
       {/* 2. Main Content Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
         
-        {/* Profile Card Banner */}
-        <ProfileCard
-          user={user}
-          totalLessons={2}
-          totalQuests={quests.length}
-          totalBadges={BADGES_DATA.length}
-          onEditProfile={() => setIsProfileModalOpen(true)}
-        />
+        {/* Conditional Header: Profile Card (Logged In) OR Guest Hero Card (Logged Out) */}
+        {isLoggedIn ? (
+          <ProfileCard
+            user={user}
+            totalLessons={2}
+            totalQuests={quests.length}
+            totalBadges={BADGES_DATA.length}
+            onEditProfile={() => setIsProfileModalOpen(true)}
+          />
+        ) : (
+          <GuestHeroCard
+            onOpenLogin={() => setIsProfileModalOpen(true)}
+          />
+        )}
 
         {/* Desktop Tab Navigation Bar */}
         <div className="flex items-center space-x-2 p-2 rounded-3xl bg-[#161633] border border-white/5 backdrop-blur-xl overflow-x-auto shadow-2xl">
@@ -495,11 +546,14 @@ export default function App() {
         user={user}
       />
 
-      <EditProfileModal
+      <LineLoginModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         user={user}
-        onSaveProfile={handleSaveProfile}
+        isLoggedIn={isLoggedIn}
+        onUpdateProfile={handleSaveProfile}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
       />
 
     </div>
